@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:P9"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Canvas>
-        <Button Content="GO"/>
-        <Button Content="Actor +" Canvas.Left="62"/>
-        <Button Content="Actor -" Canvas.Left="21"/>
-        <TextBlock Canvas.Left="106" TextWrapping="Wrap" Text="0" Height="20"/>
+        Title="MainWindow" Height="900" Width="1800">
+    <Canvas x:Name="MyCanvas">
+        <Button Content="GO" Click="Button_GO"/>
+        <Button Content="Actor +" Canvas.Left="62" Click="Button_ADD"/>
+        <Button Content="Actor -" Canvas.Left="21" Click="Button_SUB"/>
+        <TextBlock Canvas.Left="106" TextWrapping="Wrap" Text="0" Height="20" x:Name="TextBlockActorCount"/>
+        <TextBlock TextWrapping="Wrap" Text="" Canvas.Top="20" Height="400" Width="100" x:Name="Info"/>
 
     </Canvas>
 </Window>
