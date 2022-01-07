@@ -67,7 +67,7 @@ namespace P9
         /// Delta time in miliseconds
         /// default value is 1000/30 -> 30 fps in 1 second
         /// </summary>
-        private readonly double DTime = (1000/30);
+        private readonly double DTime = (1000/59);
         /// <summary>
         /// this is used to define size of arrows
         /// </summary>
@@ -80,6 +80,11 @@ namespace P9
         /// default height of window. IS USED iN SIM
         /// </summary>
         private readonly double Height = 900;
+        /// <summary>
+        /// max speed of actors on screen in pixels
+        /// </summary>
+        private readonly double MaxSpeed = 5;
+        private readonly double Spread = 1.3;
         /// <summary>
         /// clock used for animation. It this thread safe?
         /// </summary>
@@ -107,33 +112,50 @@ namespace P9
                 var Dvector = new Vector();
                 //===================================================================repulsors - each actor is reppelled by the others (for asthetics)
                 //delta of vectors between actors AND a. this vetors point FROM ac
-                var deltaVectors = from actor in Actors select a.Loc - actor.Loc;
-
+                var deltaVectors = from actor in Actors
+                                   where a.Id != actor.Id// && a.Target.Id != actor.Id
+                                   select a.Loc - actor.Loc;
+                //increase in power untill cutoff
                 double getMultRep(double x) {
-                    return x * .1 * DTime/1000;
+                    var result = -(x * x) * .00001 + (SideSize * SideSize * 4) * DTime / 1000;
+                    return (result < 0) ? (0) : (result);
                 }
-                
+                //prep vars
                 var moveVectors = from vector in deltaVectors select new {
                     vector = vector,
                     length = vector.Length,
-                    mult = getMultRep( vector.Length)
+                    mult = getMultRep(vector.Length)
                 };
+                //add repulsor vectors
                 foreach (var move in moveVectors)
-                    Dvector = Dvector + (move.vector*move.mult);
-
+                    if (SideSize * Spread > move.length) {
+                        var vec = move.vector;
+                        vec.Normalize();
+                        Dvector = Dvector + (vec * move.mult);
+                    }
+                Dvector *= .001;
+                //Dvector = new Vector(0, 0);
                 //===================================================================atractors - actros are attracted to their target and middle of window
                 var targetVector = a.Target.Loc - a.Loc;
-                var middleVector = (new Vector(Width, Height) - a.Loc) * .1;
-                
+                var targetLength = targetVector.Length;
+                targetVector.Normalize();
+                var middleVector = (new Vector(Width/2, Height/2) - a.Loc);
+                var middleLength = middleVector.Length;
+                middleVector.Normalize();
+                //get attractor strength
                 double getMultAtr(double x)
                 {
-                    return x * x * .1 * DTime/1000;
+                    return x * x * 1 * DTime/1000;
                 }
-
-                Dvector = Dvector + targetVector * getMultAtr(targetVector.Length);
-                Dvector = Dvector + middleVector * getMultAtr(middleVector.Length);
+                if (SideSize * Spread < targetLength)
+                    Dvector = Dvector + targetVector * getMultAtr(targetLength - (SideSize * Spread));
+                if (Height * .5 < middleLength)
+                    Dvector = Dvector + middleVector * getMultAtr(middleLength - (Height * .5));
                 //===================================================================processing - move and rotate images and stuff
-                a.Angle = Vector.AngleBetween(new Vector(0, 1), targetVector);
+                if (Dvector.Length > MaxSpeed)
+                    Dvector = (Dvector / Dvector.Length) * MaxSpeed;
+
+                a.Angle = Vector.AngleBetween(new Vector(0, -1), targetVector);
 
                 a.Loc = a.Loc + Dvector;
 
@@ -197,7 +219,7 @@ namespace P9
                     Canvas.SetLeft(a.MyId, a.Loc.X+SideSize*.4);
                     Canvas.SetTop(a.MyId, a.Loc.Y+SideSize*.4);
 
-                    Info.Text += "A:" + a.Id + " T:" + a.Target.Id+";";
+                    Info.Text += "A:" + a.Id + " T:" + a.Target.Id+"|";
                 });
                 //GO!
                 clock.Start();
